@@ -1,0 +1,577 @@
+#INTEGRANTES
+#Victor Andres Bautista Aguilar 20192461
+#Mauricio Sebastian Cisneros Laule 20192624
+#Marco Antonio Landauro Alba 20191063
+#Jean Pierre Soto Tipacti 20191946
+
+```{r}
+# Instalación de paquetes necesarios para implementación
+
+install.packages("class")
+install.packages("tidyverse")
+install.packages("datos")
+install.packages("car")
+install.packages("dplyr")
+```
+
+
+```{r}
+# ACTIVAR LIBRERÍAS
+
+library(class)
+# Librería que permite el acceso a la función KNN solo para pruebas
+# FUNCIONES DE LIBRERÍA UTILIZADAS: KNN
+library(tidyverse)
+library(readr)
+library(datos)
+library(car)
+library(dplyr)
+# LIBRERÍA USADA PARA CREAR DATA FRAMES Y CONCATENAR DATA FRAMES
+# FUNCIONES DE LIBRERÍA UTILIZADAS: DATA.FRAME, RBIND
+
+```
+
+
+```{r}
+# Setear estación de trabajo y lectura de datos:
+
+# ESTACIÓN DE TRABAJO DE JEAN PIERRE
+setwd("D:/USUARIO/Escritorio/Lenguajes de Programacion/Trabajo")
+
+
+# ESTACIÓN DE TRABAJO DE MARCO:
+#setwd("D:/TrabajoLP")
+
+# LECTURA DE DATOS PARA LOS DOS:
+personas <- read.csv("ObesityDataSet_raw_and_data_sinthetic.csv")
+PersonasNuevas <- read.csv("ObesityDataSet_raw_and_data_sinthetic.csv")
+
+```
+
+
+```{r}
+# Imprimir gráfica de distribución inicial con tamaño y peso como variables bidimensionales
+
+ggplot(data=personas) +
+  geom_point(mapping=aes(x=Height, y=Weight, color = NObeyesdad))
+
+```
+
+
+```{r}
+
+# Normalizar Data Método MinMax
+
+norm_minmax <- function(x,a,b){
+  (x-a) /(b-a)
+}
+
+```
+
+
+```{r}
+# VARIABLES CUANTITATIVAS
+# 01. AGE
+PersonasNuevas$Age <- norm_minmax(personas$Age,min(personas$Age),max(personas$Age))
+# 02. HEIGHT
+PersonasNuevas$Height <- norm_minmax(personas$Height,min(personas$Height),max(personas$Height))
+# 03. WEIGHT
+PersonasNuevas$Weight <- norm_minmax(personas$Weight,min(personas$Weight),max(personas$Weight))
+# 04. FCVC
+PersonasNuevas$FCVC <- norm_minmax(personas$FCVC,min(personas$FCVC),max(personas$FCVC))
+# 05. NCP
+PersonasNuevas$NCP <- norm_minmax(personas$NCP,min(personas$NCP),max(personas$NCP))
+# 06. CH20
+PersonasNuevas$CH2O <- norm_minmax(personas$CH2O,min(personas$CH2O),max(personas$CH2O))
+# 07. FAF
+PersonasNuevas$FAF <- norm_minmax(personas$FAF,min(personas$FAF),max(personas$FAF))
+# 08. TUE
+PersonasNuevas$TUE <- norm_minmax(personas$TUE,min(personas$TUE),max(personas$TUE))
+
+
+```
+
+
+```{r}
+
+# VARIABLES CUALITATIVAS
+
+# vARIABLE GÉNERO
+# RECODIFICAR VALORES VARIABLE 
+PersonasNuevas$Gender[PersonasNuevas$Gender=="Female"]<-1
+PersonasNuevas$Gender[PersonasNuevas$Gender=="Male"]<-0
+# TRANSFORMAR CHAR A NUMERIC
+PersonasNuevas$Gender <- as.numeric(PersonasNuevas$Gender)
+
+# VARIABLE HISTORIAL FAMILIAR OBESIDAD
+# RECODIFICAR VALORES VARIABLE 
+PersonasNuevas$family_history_with_overweight[PersonasNuevas$family_history_with_overweight=="no"]<-0
+PersonasNuevas$family_history_with_overweight[PersonasNuevas$family_history_with_overweight=="yes"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+PersonasNuevas$family_history_with_overweight <- as.numeric(PersonasNuevas$family_history_with_overweight)
+
+# VARIABLE CONSUMO FRECUENTE DE COMIDA CON ALTAS CALORÍAS
+# RECODIFICAR VALORES VARIABLE 
+PersonasNuevas$FAVC[PersonasNuevas$FAVC=="no"]<-0
+PersonasNuevas$FAVC[PersonasNuevas$FAVC=="yes"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+PersonasNuevas$FAVC <- as.numeric(PersonasNuevas$FAVC)
+
+# CONSUMO DE ALIMENTOS ENTRE COMIDAS (COMIDAS = DESAYUNO, ALMUERZO O CENA)
+# RECODIFICAR VALORES VARIABLE 
+PersonasNuevas$CAEC[PersonasNuevas$CAEC=="no"]<-0
+PersonasNuevas$CAEC[PersonasNuevas$CAEC=="Sometimes"]<-0.333
+PersonasNuevas$CAEC[PersonasNuevas$CAEC=="Frequently"]<-0.666
+PersonasNuevas$CAEC[PersonasNuevas$CAEC=="Always"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+PersonasNuevas$CAEC <- as.numeric(PersonasNuevas$CAEC)
+
+# VARIABLE FUMAR
+# RECODIFICAR VALORES VARIABLE 
+PersonasNuevas$SMOKE[PersonasNuevas$SMOKE=="no"]<-0
+PersonasNuevas$SMOKE[PersonasNuevas$SMOKE=="yes"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+PersonasNuevas$SMOKE <- as.numeric(PersonasNuevas$SMOKE)
+
+# VARIABLE MONITOREO CONSULTA DE CALORÍAS
+# RECODIFICAR VALORES VARIABLE 
+PersonasNuevas$SCC[PersonasNuevas$SCC=="no"]<-0
+PersonasNuevas$SCC[PersonasNuevas$SCC=="yes"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+PersonasNuevas$SCC <- as.numeric(PersonasNuevas$SCC)
+
+# VARIABLE CONSUMO DE ACOHOL
+# RECODIFICAR VALORES VARIABLE 
+PersonasNuevas$CALC[PersonasNuevas$CALC=="no"]<-0
+PersonasNuevas$CALC[PersonasNuevas$CALC=="Sometimes"]<-0.333
+PersonasNuevas$CALC[PersonasNuevas$CALC=="Frequently"]<-0.666
+PersonasNuevas$CALC[PersonasNuevas$CALC=="Always"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+PersonasNuevas$CALC <- as.numeric(PersonasNuevas$CALC)
+
+# VARIABLE MEDIO DE TRANSPORTE USADO
+# RECODIFICAR VALORES VARIABLE 
+PersonasNuevas$MTRANS[PersonasNuevas$MTRANS=="Walking"]<-0
+PersonasNuevas$MTRANS[PersonasNuevas$MTRANS=="Bike"]<-0.25
+PersonasNuevas$MTRANS[PersonasNuevas$MTRANS=="Public_Transportation"]<-0.5
+PersonasNuevas$MTRANS[PersonasNuevas$MTRANS=="Motorbike"]<-0.75
+PersonasNuevas$MTRANS[PersonasNuevas$MTRANS=="Automobile"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+PersonasNuevas$MTRANS <- as.numeric(PersonasNuevas$MTRANS)
+
+```
+
+
+
+```{r}
+
+# ESTABLECER LABELS // LAS DOS ASIGNACIONES CUMPLEN LA MISMA FUNCIÓN pero diferentes rangos a seleccionar
+PersonasNuevas_Train_labels <- PersonasNuevas[, 17]
+# PersonasNuevas_Train_labels <- PersonasNuevas$NObeyesdad[]
+
+```
+
+
+
+```{r}
+
+# ESTABLECER TRAIN DATA
+PersonasNuevas_Train <- PersonasNuevas[, 1:16]
+
+```
+
+
+```{r}
+# ALGORITMO KNN:
+
+FuncionKnn <- function(datos_de_entrenamiento,dato_de_testeo,clasificacion_datos_entrenamiento,k=1){
+  
+  # CREAMOS UN DATA FRAME CON DOS COLUMNAS: POSICION DE datos_de_entrenamiento y DISTANCIA CON dato_de_testeo
+  position  <-c()
+  distancia <-c()
+  data_frame_distancias <- FuncionPrimerDataFrame(datos_de_entrenamiento,dato_de_testeo,1,data.frame(position,distancia))
+  
+  # CREAMOS UN DATA FRAME PARA ORDENAR LOS DATOS DE ACUERDO A LAS DISTANCIAS
+  position <-c()
+  data_frame_ordenados <- FuncionRetornaElementosOrdenados(data_frame_distancias,data.frame(position))
+  
+  # CREAMOS UN DATA FRAME PARA ALMACENAR LAS CLASIFICACIONES DE LOS K ELEMENTOS MÁS CERCANOS AL ELEMENTO BUSCADO
+  clasificacion <-c()
+  data_frame_clasificacion<-FuncionRetornaClasificaciones(data_frame_ordenados,clasificacion_datos_entrenamiento,1,k,data.frame(clasificacion))
+  print(data_frame_clasificacion)
+  
+  
+  # DATA FRAME CON LA RESPUESTA
+  respuesta <- FuncionGanadora1(data_frame_clasificacion,k)
+}
+
+
+# FUNCIÓN QUE CREA DATA FRAME CON COLUMNAS CONTADOR Y SUMADOR PARA RESPUESTA
+FuncionGanadora1 <- function(data_frame_clasificacion,k){
+  # La primera columna es el contador y la segunda es el sumador de posiciones
+  respuesta<-c()
+  Insufficient_Weight <- c(0,0)
+  Normal_Weight       <- c(0,0)
+  Overweight_Level_I  <- c(0,0)
+  Overweight_Level_II <- c(0,0)
+  Obesity_Type_I      <- c(0,0)
+  Obesity_Type_II     <- c(0,0)
+  Obesity_Type_III    <- c(0,0)
+  respuesta <- rbind(respuesta,Insufficient_Weight,Normal_Weight,Overweight_Level_I,Overweight_Level_II,Obesity_Type_I,Obesity_Type_II,Obesity_Type_III)
+  
+  FuncionGanadora2(data_frame_clasificacion,k,1,respuesta)
+}
+
+# FUNCIÓN QUE PROPORCIONA LOS DATOS A LA FUNCIÓN CREADORA DEL DATA FRAME
+FuncionGanadora2 <-function(data_frame_clasificacion,k,posi,respuesta){
+  if(k>=posi){
+    if(data_frame_clasificacion[posi,1]=="Insufficient_Weight"){
+      respuesta[1,1]<- respuesta[1,1] +1
+      respuesta[1,2]<- respuesta[1,2] + posi
+    }else if(data_frame_clasificacion[posi,1]=="Normal_Weight"){
+      respuesta[2,1]<- respuesta[2,1] +1
+      respuesta[2,2]<- respuesta[2,2] + posi
+    }else if(data_frame_clasificacion[posi,1]=="Overweight_Level_I"){
+      respuesta[3,1]<- respuesta[3,1] +1
+      respuesta[3,2]<- respuesta[3,2] + posi
+    }else if(data_frame_clasificacion[posi,1]=="Overweight_Level_II"){
+      respuesta[4,1]<- respuesta[4,1] +1
+      respuesta[4,2]<- respuesta[4,2] + posi
+    }else if(data_frame_clasificacion[posi,1]=="Obesity_Type_I"){
+      respuesta[5,1]<- respuesta[5,1] +1
+      respuesta[5,2]<- respuesta[5,2] + posi
+    }else if(data_frame_clasificacion[posi,1]=="Obesity_Type_II"){
+      respuesta[6,1]<- respuesta[6,1] +1
+      respuesta[6,2]<- respuesta[6,2] + posi
+    }else{
+      respuesta[7,1]<- respuesta[7,1] +1
+      respuesta[7,2]<- respuesta[7,2] + posi
+    }
+    FuncionGanadora2(data_frame_clasificacion,k,posi+1,respuesta)
+  }else{
+    return (FuncionMenor(respuesta,1,100,0,max(respuesta[1:7,1])))
+  }
+}
+
+# FUNCIÓN QUE BUSCA EL VALOR DE SUMA MENOR DE LOS QUE TIENEN LOS CONTADORES MÁS ALTOS
+FuncionMenor <- function(respuesta,posi,menor,cont,repe){
+  if(posi<=dim(respuesta)[1]){
+    if(respuesta[posi,1]==repe){
+      if(respuesta[posi,2]<menor){
+        FuncionMenor(respuesta,posi+1,menor=respuesta[posi,2],1,repe)
+      }else if(respuesta[posi,2]==menor){
+        FuncionMenor(respuesta,posi+1,menor,cont+1,repe)
+      }else{
+        FuncionMenor(respuesta,posi+1,menor,cont,repe)
+      }
+    }
+    else{
+      FuncionMenor(respuesta,posi+1,menor,cont,repe)
+    }
+  }else{
+    if(cont>1){
+      print(respuesta)
+      BuscarMayoresSumatorias(respuesta,menor,0,1)
+    }else{
+      BuscarGanadorContador(respuesta,menor,1)
+    }
+  }
+}
+
+# FUNCIÓN QUE SE ENCARGA DE BUSCAR LA MAYOR SUMATORIA PARA NO DETERMINAR EMPATE
+BuscarMayoresSumatorias <- function(respuesta,menor,suma,posicion){
+  if(posicion<=dim(respuesta)[1]){
+    if(respuesta[posicion,1]==menor){
+      if(respuesta[posicion,2]>suma){
+        BuscarMayoresSumatorias(respuesta,menor,respuesta[posicion,2],posicion)
+      }else{
+        BuscarMayoresSumatorias(respuesta,menor,suma,posicion+1)
+      }
+    }
+    else{
+      BuscarMayoresSumatorias(respuesta,menor,suma,posicion+1)
+    }
+  }
+  else{
+    ImprimirEnPantallaPosicion(posicion)
+  }
+}
+
+# FUNCIÓN QUE BUSCA LA POSICIÓN A EMPAREJAR CON EL NIVEL DE OBESIDAD
+BuscarGanadorContador <- function(respuesta,menor,posicion){
+  if(respuesta[posicion,2]==menor){
+    ImprimirEnPantallaPosicion(posicion)
+  }else{
+    BuscarGanadorContador(respuesta,menor,posicion+1)
+  }
+}
+
+# FUNCIÓN QUE PERMITE IMPRIMIR EL VALOR DEL NIVEL DE OBESIDAD BASADO EN LA POSICIÓN OBTENIDA ANTERIORMENTE 
+ImprimirEnPantallaPosicion<-function(posicion){
+  if(posicion==1){
+    print("Insufficient_Weight")
+  }else if(posicion==2){
+    print("Normal_Weight")
+  }else if(posicion==3){
+    print("Overweight_Level_I")
+  }else if(posicion==4){
+    print("Overweight_Level_II")
+  }else if(posicion==5){
+    print("Obesity_Type_I")
+  }else if(posicion==6){
+    print("Obesity_Type_II")
+  }else{
+    print("Obesity_Type_III")
+  }
+}
+
+
+# FUNCIÓN QUE RETORNA UN DATA FRAME CON LAS CLASIFICACIONES DE DATOS_TRAIN
+FuncionRetornaClasificaciones <- function(data_frame_ordenados,clasificacion_datos_entrenamiento,position,k,respuesta){
+  if(position<=k){
+    clasificacion <- data.frame(clasificaciones = c(clasificacion_datos_entrenamiento[data_frame_ordenados[position]]))
+    print(data_frame_ordenados[position])
+    respuesta <- rbind(respuesta,clasificacion)
+    FuncionRetornaClasificaciones(data_frame_ordenados,clasificacion_datos_entrenamiento,position+1,k,respuesta)
+  }else{
+    return(respuesta)
+  }
+}
+
+
+
+# RESPUESTA = data.frame(position)
+# FUNCIÓN QUE RETORNA ELEMENTOS ORDENADOS
+FuncionRetornaElementosOrdenados <- function(data_frame_tamanios,respuesta){
+  data_frame_tamanios <- data_frame_tamanios %>% arrange(data_frame_tamanios[2]) %>% head(dim(data_frame_tamanios)[1])
+  respuesta <- data_frame_tamanios[,1]
+  return(respuesta)
+}
+
+
+
+# FUNCION RECURSIVA QUE CREA EL DATA FRAME DE LAS DISTANCIAS ENTRE PUNTOS DE ENTRENAMIENTO Y PUNTO OBJETIVO
+FuncionPrimerDataFrame <- function(datos_de_entrenamiento,dato_de_testeo,position,respuesta){
+  if(dim(datos_de_entrenamiento)[1] > position){
+    # respuesta tiene dos columnas que son: position del elemento de datos_de_entrenamiento y distancia
+    distancia <- FuncionDistanciaEuclidiana1(datos_de_entrenamiento[position,],dato_de_testeo)
+    extra <- data.frame(position,distancia)
+    respuesta <- rbind(respuesta, extra)
+    FuncionPrimerDataFrame(datos_de_entrenamiento,dato_de_testeo,position+1,respuesta)
+  }
+  else{
+    # respuesta tiene que ser de tipo DataFrame
+    return (respuesta)
+  }
+  
+}
+# PRECONDICIÓN QUE LOS ARREGLOS P1 Y P2 TIENEN QUE SER DEL MISMO TAMAÑO
+FuncionDistanciaEuclidiana1 <- function(DF1,DF2){
+  suma <- FuncionDistanciaEuclidiana2(DF1,DF2,1,0)
+  return (sqrt(suma))
+}
+FuncionDistanciaEuclidiana2 <- function(DF1,DF2,posicion,suma){
+  if(length(DF1) >= posicion){
+    cuadrado <- (DF1[1,posicion]-DF2[1,posicion])^2
+    FuncionDistanciaEuclidiana2(DF1,DF2,posicion+1,suma+cuadrado)
+  }
+  else{
+    return(suma)
+  }
+}
+
+```
+
+
+```{r}
+# INGRESO DE DATOS DE UN USUARIO:
+
+print("¿Cuál es su género? (Male/Female): ")
+LGender<- scan(what="character")
+print("¿Cuál es su edad? (Valor Numérico): ")
+LAge<- scan()
+print("¿Cuánto mides? (Valor Numérico): ")
+LHeight<- scan()
+print("¿Cuánto pesa? (Valor Numérico): ")
+LWeight<- scan()
+print("¿Algún miembro de su familia sufre de sobrepeso? (yes/no): ")
+Lfamily_history_with_overweight<-scan(what="character")
+print("¿Usted consume alimentos con alto nivel de calorías frecuentemente? (yes/no): ")
+LFAVC<-scan(what="character")
+print("¿Usualmente come vegetales en sus comidas? (yes/no): ")
+LFCVC <- scan()
+print("¿Cuántas comidas principales tiene diariamente? (0-3): ")
+LNCP <- scan()
+print("¿Come entre comidas principales? (No/Sometimes/Frequently/Always): ")
+LCAEC <- scan(what="character")
+print("¿Usted fuma? (yes/no): ")
+LSMOKE <- scan(what="character")
+print("¿Cuánta agua toma diariamente? (0-1): ")
+LCH20 <- scan()
+print("¿Usted monitorea las calorias que usted come diariamente? (yes/no): ")
+LSCC <- scan(what="character")
+print("¿Cuán seguido usted realiza actividad física? (0-5): ")
+LFAF <- scan()
+print("¿Cuánto tiempo usted usa dispositivos electrónicos como celulares,
+televisión, videojuegos, computadores, otros? (0-5): ")
+LTUE <- scan()
+print("¿Cuán seguido usted consume bebidas alcohólicas? (no/Sometimes/Frequently/Always): ")
+LCALC <- scan(what="character")
+print("¿Qué medio de transporte usted usualmente utiliza? (Automobile/Motorbike/Bike/Public Transportation/Walking): ")
+LMTRANS <- scan(what="character")
+
+frame <- data.frame(LGender, LAge, LHeight, LWeight, Lfamily_history_with_overweight, LFAVC, LFCVC, LNCP, LCAEC, LSMOKE, LCH20, LSCC, LFAF, LTUE, LCALC, LMTRANS)
+
+```
+
+
+
+```{r}
+
+# SI SE DESEA ASIGNAR UNA PERSONA POR CÓDIGO PARA EVITAR INGRESARLA POR TECLADO HACERLO AQUÍ
+
+frame <- 
+  data.frame(
+    LGender= "Male",
+    LAge= 19,
+    LHeight= 1.80, 
+    LWeight=77,
+    Lfamily_history_with_overweight= "yes", 
+    LFAVC="no", 
+    LFCVC=3,
+    LNCP= 4, 
+    LCAEC="Frequently", 
+    LSMOKE="no",
+    LCH20= 3, 
+    LSCC="yes",
+    LFAF= 3,
+    LTUE= 2,
+    LCALC="no",
+    LMTRANS="Walking")
+
+```
+
+
+```{r}
+frame1 <- frame
+
+# A partir de aquí inicia la normalización de datos
+# VARIABLES CUANTITATIVAS
+# 01. AGE
+frame$LAge <- norm_minmax(frame$LAge,min(personas$Age),max(personas$Age))
+# 02. HEIGHT
+frame$LHeight <- norm_minmax(frame$LHeight,min(personas$Height),max(personas$Height))
+# 03. WEIGHT
+frame$LWeight <- norm_minmax(frame$LWeight,min(personas$Weight),max(personas$Weight))
+# 04. FCVC
+frame$LFCVC <- norm_minmax(frame$LFCVC,min(personas$FCVC),max(personas$FCVC))
+# 05. NCP
+frame$LNCP <- norm_minmax(frame$LNCP,min(personas$NCP),max(personas$NCP))
+# 06. CH20
+frame$LCH20 <- norm_minmax(frame$LCH20,min(personas$CH2O),max(personas$CH2O))
+# 07. FAF
+frame$LFAF <- norm_minmax(frame$LFAF,min(personas$FAF),max(personas$FAF))
+# 08. TUE
+frame$LTUE <- norm_minmax(frame$LTUE,min(personas$TUE),max(personas$TUE))
+
+
+# VARIABLES CUALITATIVAS
+
+# vARIABLE GÉNERO
+# RECODIFICAR VALORES VARIABLE 
+frame$LGender[frame$LGender=="Female"]<-1
+frame$LGender[frame$LGender=="Male"]<-0
+# TRANSFORMAR CHAR A NUMERIC
+frame$LGender <- as.numeric(frame$LGender)
+
+# VARIABLE HISTORIAL FAMILIAR OBESIDAD
+# RECODIFICAR VALORES VARIABLE 
+frame$Lfamily_history_with_overweight[frame$Lfamily_history_with_overweight=="no"]<-0
+frame$Lfamily_history_with_overweight[frame$Lfamily_history_with_overweight=="yes"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+frame$Lfamily_history_with_overweight <- as.numeric(frame$Lfamily_history_with_overweight)
+
+# VARIABLE CONSUMO FRECUENTE DE COMIDA CON ALTAS CALORÍAS
+# RECODIFICAR VALORES VARIABLE 
+frame$LFAVC[frame$LFAVC=="no"]<-0
+frame$LFAVC[frame$LFAVC=="yes"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+frame$LFAVC <- as.numeric(frame$LFAVC)
+
+# CONSUMO DE ALIMENTOS ENTRE COMIDAS (COMIDAS = DESAYUNO, ALMUERZO O CENA)
+# RECODIFICAR VALORES VARIABLE 
+frame$LCAEC[frame$LCAEC=="no"]<-0
+frame$LCAEC[frame$LCAEC=="Sometimes"]<-0.333
+frame$LCAEC[frame$LCAEC=="Frequently"]<-0.666
+frame$LCAEC[frame$LCAEC=="Always"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+frame$LCAEC <- as.numeric(frame$LCAEC)
+
+# VARIABLE FUMAR
+# RECODIFICAR VALORES VARIABLE 
+frame$LSMOKE[frame$LSMOKE=="no"]<-0
+frame$LSMOKE[frame$LSMOKE=="yes"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+frame$LSMOKE <- as.numeric(frame$LSMOKE)
+
+# VARIABLE MONITOREO CONSULTA DE CALORÍAS
+# RECODIFICAR VALORES VARIABLE 
+frame$LSCC[frame$LSCC=="no"]<-0
+frame$LSCC[frame$LSCC=="yes"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+frame$LSCC <- as.numeric(frame$LSCC)
+
+# VARIABLE CONSUMO DE ACOHOL
+# RECODIFICAR VALORES VARIABLE 
+frame$LCALC[frame$LCALC=="no"]<-0
+frame$LCALC[frame$LCALC=="Sometimes"]<-0.333
+frame$LCALC[frame$LCALC=="Frequently"]<-0.666
+frame$LCALC[frame$LCALC=="Always"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+frame$LCALC <- as.numeric(frame$LCALC)
+
+# VARIABLE MEDIO DE TRANSPORTE USADO
+# RECODIFICAR VALORES VARIABLE 
+frame$LMTRANS[frame$LMTRANS=="Walking"]<-0
+frame$LMTRANS[frame$LMTRANS=="Bike"]<-0.25
+frame$LMTRANS[frame$LMTRANS=="Public_Transportation"]<-0.5
+frame$LMTRANS[frame$LMTRANS=="Motorbike"]<-0.75
+frame$LMTRANS[frame$LMTRANS=="Automobile"]<-1
+# TRANSFORMAR CHAR A NUMERIC
+frame$LMTRANS <- as.numeric(frame$LMTRANS)
+
+```
+
+
+```{r}
+# Ejecución algoritmo KNN personal
+
+FuncionKnn(PersonasNuevas_Train,frame,PersonasNuevas_Train_labels,k=7)
+```
+
+
+
+```{r}
+# IMPLEMENTACIÓN CON LIBRERÍA DE KNN
+
+# LIBRERÍA CLASS
+library(class)
+
+# ESTABLECER VARIABLE PREDICTORA
+PersonasNuevas_Pred <- knn(PersonasNuevas_Train, frame, PersonasNuevas_Train_labels,k=7)
+PersonasNuevas_Pred
+
+```
+
+
+
+```{r}
+# COMPROBACIÓN QUE DATA UTILIZADA PARA PRUEBA SÍ CUMPLE CON REQUESITOS DE SER ALEATORIA Y SER PARTE DEL DATASET INICIAL
+ggplot(data=PersonasNuevas)+
+  geom_point(mapping=aes(x=Height, y=Weight, color = NObeyesdad))
+
+
+```
+
+
+

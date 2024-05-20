@@ -17,13 +17,13 @@ The dataset used in this project is "obesitydatasetraw". It includes various fea
 ## Project Structure 
 
 .
-├── Ruby/R Knn
-│ ├── data.csv
-│ ├── distribution.png
-│ ├── explanation.pptx
-│ ├── RawData
-│ ├── RKnn.Rmd
-│ └── RubyKnn.rb
+├── Ruby/R Knn\
+│ ├── data.csv\
+│ ├── distribution.png\
+│ ├── explanation.pptx\
+│ ├── RawData\
+│ ├── RKnn.Rmd\
+│ └── RubyKnn.rb\
 └── README.md
 
 ### R
